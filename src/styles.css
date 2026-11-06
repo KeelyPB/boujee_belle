@@ -2,17 +2,17 @@
 
 :root {
   font-family: "DM Sans", sans-serif;
-  color: #332a27;
-  background: #fbf8f4;
+  color: #382d33;
+  background: #fff;
   font-synthesis: none;
   text-rendering: optimizeLegibility;
-  --paper: #fbf8f4;
-  --white: #fffdfa;
-  --ink: #332a27;
-  --muted: #847974;
-  --rose: #a56d68;
-  --rose-light: #ead9d3;
-  --line: #e9e1dc;
+  --paper: #fff;
+  --white: #fff;
+  --ink: #382d33;
+  --muted: #81747b;
+  --rose: #d63384;
+  --rose-light: #fdebf4;
+  --line: #f0e2e9;
   --serif: "Playfair Display", Georgia, serif;
 }
 
@@ -207,6 +207,51 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .quick-view-copy > p:not(.quick-view-note) { margin: 17px 0; color: #796e68; font-size: 11px; line-height: 1.8; }
 .quick-view-note { display: flex; align-items: center; gap: 8px; margin: 0 0 22px; color: #8d6a60; font-size: 9px; }
 .toast { position: fixed; right: 24px; bottom: 24px; z-index: 20; padding: 14px 19px; color: white; background: #55433d; box-shadow: 0 6px 24px rgba(40,25,20,.16); font-size: 11px; }
+
+/* Keep the storefront surfaces bright, with the logo's pink as the accent. */
+.announcement { color: #66324e; background: #fdebf4; }
+.announcement span, .hero-kicker { color: #d63384; }
+.site-header { border-bottom-color: #f4e4ec; }
+.nav-link, .product-bottom strong, .result-count, .welcome-copy p,
+.cart-line-info > span:not(.eyebrow), .summary-row, .form-field,
+.invoice-total, .quick-view-copy > p:not(.quick-view-note) { color: #594b53; }
+.brand-mark { border-color: #f0a9cc; color: #65324d; }
+.cart-button b, .success-mark { background: #d63384; }
+.category-section, .order-summary { background: #fff4f9; }
+.category-tile, .product-image-button { background: #fdebf4; }
+.welcome-mark, .welcome-copy h2 em, .section-heading h2 em,
+.page-intro h1 em, .category-tile em, .quick-view-note,
+.payment-icon, .empty-icon { color: #d63384; }
+.text-link { border-bottom-color: #f0a9cc; color: #ad2868; }
+.button-dark { color: #fff; background: #c92f79; }
+.button-dark:hover { background: #a92363; }
+.button-outline { border-color: #e9a6c7; color: #ad2868; }
+.button-outline:hover, .filter-chip.chosen, .filter-chip:hover { border-color: #d63384; background: #d63384; }
+.add-button { border-color: #efb4d0; color: #bd286e; }
+.add-button:hover { background: #d63384; }
+.filter-chip { border-color: #f0dce6; color: #705b66; }
+.empty-icon { border-color: #f0c4d9; }
+.order-summary, .form-card, .invoice-card { border-color: #f1e0e9; }
+.summary-total { border-top-color: #f0dce6; }
+.form-title > span { border-color: #f0b3cf; color: #bd286e; }
+.form-field input, .form-field textarea { border-color: #efdee7; background: #fff; }
+.payment-option { border-color: #efdee7; }
+.payment-option.selected-payment { border-color: #e17cac; background: #fff4f9; }
+.payment-option input { accent-color: #d63384; }
+.checkout-item { border-bottom-color: #f0e0e8; }
+.invoice-head, .invoice-meta, .invoice-foot { border-color: #f0e2e9; }
+.invoice-meta span, .invoice-parties .eyebrow, .invoice-table-head { color: #bd3b7a; }
+.invoice-table-head { border-bottom-color: #edccdc; }
+.invoice-table-row { border-bottom-color: #f6eaf0; }
+.invoice-total { color: #8d285c; }
+.site-footer { color: #59404d; background: #fff1f7; }
+.footer-brand p, .footer-main button, .footer-main a,
+.footer-main > div > span:not(.eyebrow) { color: #6d5360; }
+.footer-main .eyebrow { color: #ba3f79; }
+.footer-note, .footer-note span { color: #b52e70; }
+.footer-bottom { border-top-color: #efdce6; color: #806b77; }
+.modal-close { background: rgba(255,255,255,.94); }
+.toast { background: #bd286e; }
 
 @media (max-width: 900px) {
   .welcome { grid-template-columns: 38px minmax(0,1fr) minmax(250px,.9fr); gap: 22px; }
