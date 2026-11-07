@@ -1,6 +1,6 @@
 # Boujee Belle
 
-A React storefront for Boujee Belle — Trendy & Elegant. Browse jewellery and accessories across seven categories, add products to a bag, enter customer and delivery details, choose a payment option, and generate a printable or downloadable Excel invoice using the supplied workbook template.
+A React storefront for Boujee Belle — Trendy & Elegant. Browse jewellery and accessories across seven categories, add products to a bag, enter customer and delivery details, choose a payment option, and prepare a PDF order invoice for the business.
 
 ## Run locally
 
@@ -17,6 +17,6 @@ Business email and address follow the supplied invoice workbook: `boujeebelle@gm
 
 ## Orders and invoices
 
-The invoice uses the entered customer, product, payment, and delivery details. Its issue date is generated at order time, its due time is 24 hours later, and its number uses the format `YYYY-MM-DD-###`. In this browser-only starter, the daily sequence is stored in the browser, so it is not shared across customers or devices.
+The PDF invoice uses the entered customer, product, payment, and delivery details. Its issue date is generated at order time, its due time is 24 hours later, and its number uses `YYDD-###` (for example `2607-001`). The sequence continues for the same YYDD code through the year and is stored in the browser, so it is not shared across customers or devices.
 
-WhatsApp and email actions open prefilled messages for review and sending; they do not send automatically. Automatic invoice delivery to both the business and customer requires a deployed order backend plus configured email and WhatsApp Business API credentials. Payment selection records the customer's preference; it does not process a payment.
+Customers download the PDF and open a prefilled WhatsApp message addressed to the Boujee Belle business number; they must attach the downloaded PDF and send it themselves. The invoice is not emailed to the customer. Automatic delivery and globally unique sequential invoice numbers require a deployed backend and configured business messaging credentials. Payment selection records the customer's preference; it does not process a payment.

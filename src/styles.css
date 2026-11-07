@@ -162,6 +162,13 @@ button:focus-visible, a:focus-visible, input:focus-visible, textarea:focus-visib
 .success-mark { width: 46px; height: 46px; display: grid; place-items: center; margin: 0 auto 16px; border-radius: 50%; color: #fff; background: #a87e71; font-size: 22px; }
 .confirmation-intro h1 { max-width: none; margin: 10px 0; font-size: 41px; }
 .confirmation-intro p { max-width: 520px; margin: 0 auto; color: #81736d; font-size: 11px; line-height: 1.7; }
+.order-received-card { max-width: 520px; margin: 0 auto; padding: 27px 30px; border: 1px solid #f1e0e9; background: #fff4f9; }
+.order-received-card > strong { display: block; margin: 7px 0 18px; color: #8d285c; font-family: var(--serif); font-size: 24px; font-weight: 500; }
+.order-received-card > div { display: flex; justify-content: space-between; gap: 16px; padding: 9px 0; border-top: 1px solid #efdce6; color: #594b53; font-size: 13px; }
+.order-received-card > div span:last-child { text-align: right; }
+.order-received-card .received-total { margin-top: 4px; padding-top: 14px; color: #8d285c; font-weight: 600; }
+.order-received-card .received-total strong { font-size: 17px; }
+.order-received-card > p { margin: 13px 0 0; color: #81747b; font-size: 12px; line-height: 1.6; }
 .invoice-card { padding: 34px; border: 1px solid #e7ddd6; background: #fffdfa; }
 .invoice-head { display: flex; justify-content: space-between; align-items: center; padding-bottom: 23px; border-bottom: 1px solid #eee6e0; }
 .invoice-brand .brand-logo { width: 86px; height: 76px; }

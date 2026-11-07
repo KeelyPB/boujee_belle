@@ -74,106 +74,133 @@ const dayStamp = (date) =>
 
 function makeInvoiceNumber(now) {
   const date = dayStamp(now);
-  const key = `boujee-belle-invoice-${date}`;
+  const yearDay = `${date.slice(2, 4)}${date.slice(8, 10)}`;
+  const key = `boujee-belle-invoice-${yearDay}`;
   const sequence = Number(window.localStorage.getItem(key) || "0") + 1;
   window.localStorage.setItem(key, String(sequence));
-  return `${date}-${String(sequence).padStart(3, "0")}`;
+  return `${yearDay}-${String(sequence).padStart(3, "0")}`;
 }
 
-async function downloadInvoiceWorkbook(invoice) {
-  const { default: ExcelJS } = await import("exceljs");
-  const response = await fetch("/boujee-belle-invoice-template.xlsx");
-  if (!response.ok) throw new Error(`Invoice template request failed: ${response.status}`);
+async function downloadInvoicePdf(invoice) {
+  const [{ jsPDF }, { default: autoTable }] = await Promise.all([
+    import("jspdf"),
+    import("jspdf-autotable"),
+  ]);
+  const logoResponse = await fetch("/boujee-belle-logo.png");
+  if (!logoResponse.ok) throw new Error(`Boujee Belle logo request failed: ${logoResponse.status}`);
 
-  const workbook = new ExcelJS.Workbook();
-  await workbook.xlsx.load(await response.arrayBuffer());
-  const sheet = workbook.worksheets[0];
-  if (!sheet) throw new Error("The invoice template has no worksheet.");
+  const pdf = new jsPDF({ unit: "mm", format: "a4" });
+  const pageWidth = pdf.internal.pageSize.getWidth();
+  const pageHeight = pdf.internal.pageSize.getHeight();
+  const margin = 18;
+  const logo = new Uint8Array(await logoResponse.arrayBuffer());
 
-  const firstItemRow = 12;
-  const initialItemCapacity = 6;
-  const extraRows = Math.max(0, invoice.items.length - initialItemCapacity);
-  if (extraRows > 0) {
-    const additionalRows = Array.from({ length: extraRows }, () => []);
-    sheet.spliceRows(18, 0, ...additionalRows);
-    for (let rowNumber = 18; rowNumber < 18 + extraRows; rowNumber += 1) {
-      const row = sheet.getRow(rowNumber);
-      const styledRow = sheet.getRow(17);
-      row.height = styledRow.height;
-      styledRow.eachCell({ includeEmpty: true }, (cell, column) => {
-        row.getCell(column).style = { ...cell.style };
-      });
-    }
-  }
+  pdf.addImage(logo, "PNG", margin, 10, 40, 38);
+  pdf.setTextColor(56, 45, 51);
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(19);
+  pdf.text("ORDER INVOICE", pageWidth - margin, 21, { align: "right" });
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(11);
+  pdf.text(invoice.number, pageWidth - margin, 29, { align: "right" });
+  pdf.setFontSize(9);
+  pdf.setTextColor(112, 91, 102);
+  pdf.text(`Issued: ${dateTime(invoice.issuedAt)}`, pageWidth - margin, 36, { align: "right" });
+  pdf.text(`Due: ${dateTime(invoice.dueAt)}`, pageWidth - margin, 42, { align: "right" });
+  pdf.setDrawColor(239, 202, 219);
+  pdf.line(margin, 51, pageWidth - margin, 51);
 
-  const paymentRow = 26 + extraRows;
-  sheet.spliceRows(paymentRow, 0, []);
+  const billingTop = 59;
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(9);
+  pdf.setTextColor(189, 59, 122);
+  pdf.text("BILLED TO", margin, billingTop);
+  pdf.text("BILLED BY", pageWidth / 2 + 5, billingTop);
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(10);
+  pdf.setTextColor(56, 45, 51);
+  const customerLines = [
+    invoice.customer.name,
+    invoice.customer.address,
+    invoice.customer.phone,
+    invoice.customer.email,
+  ];
+  const businessLines = [
+    BUSINESS.name,
+    BUSINESS.address,
+    `+${BUSINESS.whatsapp}`,
+    BUSINESS.email,
+  ];
+  customerLines.forEach((line, index) => pdf.text(line, margin, billingTop + 7 + index * 6));
+  businessLines.forEach((line, index) => pdf.text(line, pageWidth / 2 + 5, billingTop + 7 + index * 6));
 
-  const table = sheet.getTable("Table1");
-  if (!table) throw new Error("The invoice template is missing its item table.");
-  const lastItemRow = firstItemRow + invoice.items.length - 1;
-  table.table.tableRef = `B11:F${lastItemRow}`;
-  table.table.autoFilterRef = `B11:F${lastItemRow}`;
-  table.commit();
+  const detailsTop = 94;
+  const deliveryLines = pdf.splitTextToSize(
+    `${invoice.delivery.address}\n${invoice.delivery.date} at ${invoice.delivery.time}${invoice.delivery.notes ? `\n${invoice.delivery.notes}` : ""}`,
+    pageWidth / 2 - margin - 14,
+  );
+  const detailsHeight = Math.max(27, 21 + (deliveryLines.length - 1) * 4.5);
+  pdf.setFillColor(255, 244, 249);
+  pdf.setDrawColor(241, 224, 233);
+  pdf.roundedRect(margin, detailsTop, pageWidth - margin * 2, detailsHeight, 2, 2, "FD");
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(9);
+  pdf.setTextColor(189, 59, 122);
+  pdf.text("DELIVER TO", margin + 5, detailsTop + 7);
+  pdf.text("PAYMENT METHOD", pageWidth / 2 + 5, detailsTop + 7);
+  pdf.setFont("helvetica", "normal");
+  pdf.setFontSize(10);
+  pdf.setTextColor(56, 45, 51);
+  pdf.text(deliveryLines, margin + 5, detailsTop + 14);
+  pdf.text(invoice.payment, pageWidth / 2 + 5, detailsTop + 14);
 
-  sheet.getCell("F4").value = `+${BUSINESS.whatsapp}`;
-  sheet.getCell("C7").value = invoice.issuedAt;
-  sheet.getCell("C7").numFmt = "dd mmm yyyy hh:mm";
-  sheet.getCell("C8").value = invoice.dueAt;
-  sheet.getCell("C8").numFmt = "dd mmm yyyy hh:mm";
-  sheet.getCell("F7").value = invoice.number;
-  const customerRow = 21 + extraRows;
-  sheet.getCell(`C${customerRow}`).value = invoice.customer.name;
-  sheet.getCell(`C${customerRow + 1}`).value = invoice.customer.address;
-  sheet.getCell(`C${customerRow + 2}`).value = invoice.customer.phone;
-  sheet.getCell(`C${customerRow + 3}`).value = invoice.customer.email;
-  sheet.getCell(`F${customerRow}`).value = BUSINESS.name;
-  sheet.getCell(`F${customerRow + 1}`).value = BUSINESS.address;
-  sheet.getCell(`F${customerRow + 2}`).value = `+${BUSINESS.whatsapp}`;
-  sheet.getCell(`F${customerRow + 3}`).value = BUSINESS.email;
-
-  const deliveryRow = 25 + extraRows;
-  for (const rowNumber of [deliveryRow, paymentRow]) {
-    const row = sheet.getRow(rowNumber);
-    const styleSource = sheet.getRow(customerRow + 3);
-    styleSource.eachCell({ includeEmpty: true }, (cell, column) => {
-      row.getCell(column).style = { ...cell.style };
-    });
-  }
-  sheet.getCell(`B${deliveryRow}`).value = "Deliver to:";
-  sheet.getCell(`C${deliveryRow}`).value = `${invoice.delivery.address} · ${invoice.delivery.date} at ${invoice.delivery.time}${invoice.delivery.notes ? ` · ${invoice.delivery.notes}` : ""}`;
-  sheet.getCell(`B${paymentRow}`).value = "Payment:";
-  sheet.getCell(`C${paymentRow}`).value = invoice.payment;
-  sheet.mergeCells(`C${deliveryRow}:F${deliveryRow}`);
-  sheet.mergeCells(`C${paymentRow}:F${paymentRow}`);
-  sheet.getCell(`C${deliveryRow}`).alignment = { wrapText: true, vertical: "middle" };
-  sheet.getRow(deliveryRow).height = 32;
-
-  invoice.items.forEach((item, index) => {
-    const row = sheet.getRow(firstItemRow + index);
-    row.getCell(2).value = index + 1;
-    row.getCell(3).value = `${item.name} (${item.category})`;
-    row.getCell(4).value = item.quantity;
-    row.getCell(5).value = item.price;
-    row.getCell(6).value = item.price * item.quantity;
+  autoTable(pdf, {
+    startY: detailsTop + detailsHeight + 7,
+    margin: { left: margin, right: margin, bottom: 20 },
+    head: [["S/n", "Description", "Quantity", "Unit Price", "Amount"]],
+    body: invoice.items.map((item, index) => [
+      index + 1,
+      `${item.name} (${item.category})`,
+      item.quantity,
+      money(item.price),
+      money(item.price * item.quantity),
+    ]),
+    theme: "grid",
+    styles: { font: "helvetica", fontSize: 9, cellPadding: 3, textColor: [56, 45, 51], lineColor: [241, 224, 233] },
+    headStyles: { fillColor: [253, 235, 244], textColor: [141, 40, 92], fontStyle: "bold" },
+    columnStyles: {
+      0: { cellWidth: 12, halign: "center" },
+      1: { cellWidth: "auto" },
+      2: { cellWidth: 20, halign: "center" },
+      3: { cellWidth: 34, halign: "right" },
+      4: { cellWidth: 34, halign: "right" },
+    },
   });
 
-  const totalRow = 19 + extraRows;
-  sheet.getCell(`F${totalRow}`).value = {
-    formula: `SUM(F${firstItemRow}:F${lastItemRow})`,
-    result: invoice.total,
-  };
+  let totalY = pdf.lastAutoTable.finalY + 10;
+  if (totalY > pageHeight - 25) {
+    pdf.addPage();
+    totalY = margin + 5;
+  }
+  pdf.setFont("helvetica", "bold");
+  pdf.setFontSize(11);
+  pdf.setTextColor(141, 40, 92);
+  pdf.text("TOTAL DUE", pageWidth - 68, totalY);
+  pdf.text(money(invoice.total), pageWidth - margin, totalY, { align: "right" });
 
-  const data = await workbook.xlsx.writeBuffer();
-  const file = new Blob([data], {
-    type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-  });
-  const url = URL.createObjectURL(file);
-  const link = document.createElement("a");
-  link.href = url;
-  link.download = `Boujee-Belle-Invoice-${invoice.number}.xlsx`;
-  link.click();
-  window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+  const pageCount = pdf.getNumberOfPages();
+  for (let pageNumber = 1; pageNumber <= pageCount; pageNumber += 1) {
+    pdf.setPage(pageNumber);
+    pdf.setDrawColor(239, 220, 230);
+    pdf.line(margin, pageHeight - 15, pageWidth - margin, pageHeight - 15);
+    pdf.setFont("helvetica", "normal");
+    pdf.setFontSize(8);
+    pdf.setTextColor(128, 107, 119);
+    pdf.text("Thank you for shopping with Boujee Belle. Trendy & Elegant.", margin, pageHeight - 9);
+    pdf.text(`${pageNumber} / ${pageCount}`, pageWidth - margin, pageHeight - 9, { align: "right" });
+  }
+
+  pdf.save(`Boujee-Belle-Invoice-${invoice.number}.pdf`);
 }
 
 function Icon({ name, size = 20 }) {
@@ -218,7 +245,7 @@ function App() {
   const [delivery, setDelivery] = useState({ address: "", date: "", time: "", notes: "" });
   const [payment, setPayment] = useState("Mobile Money");
   const [invoice, setInvoice] = useState(null);
-  const [exporting, setExporting] = useState(false);
+  const [preparingPdf, setPreparingPdf] = useState(false);
   const [notice, setNotice] = useState("");
 
   useEffect(() => {
@@ -279,34 +306,29 @@ function App() {
     navigate("confirmation");
   }
 
-  async function handleExcelDownload() {
-    setExporting(true);
+  async function handlePdfDownload() {
+    setPreparingPdf(true);
     try {
-      await downloadInvoiceWorkbook(invoice);
+      await downloadInvoicePdf(invoice);
     } catch (error) {
-      console.error("Could not download the Boujee Belle invoice workbook.", error);
-      setNotice("We couldn’t prepare the Excel invoice. Please try again.");
+      console.error("Could not prepare the Boujee Belle order invoice PDF.", error);
+      setNotice("We couldn’t prepare the PDF invoice. Please try again.");
     } finally {
-      setExporting(false);
+      setPreparingPdf(false);
     }
   }
 
   const invoiceMessage = invoice
     ? [
-        `Boujee Belle order invoice ${invoice.number}`,
-        `Issued: ${dateTime(invoice.issuedAt)} | Due: ${dateTime(invoice.dueAt)}`,
+        `New Boujee Belle order ${invoice.number}`,
         `Customer: ${invoice.customer.name} | ${invoice.customer.phone}`,
-        `Email: ${invoice.customer.email}`,
-        `Delivery: ${invoice.delivery.address}, ${invoice.delivery.date} at ${invoice.delivery.time}`,
-        `Payment: ${invoice.payment}`,
-        ...invoice.items.map((item) => `${item.quantity} x ${item.name} — ${money(item.price * item.quantity)}`),
-        `TOTAL: ${money(invoice.total)}`,
-        invoice.delivery.notes ? `Notes: ${invoice.delivery.notes}` : "",
-      ].filter(Boolean).join("\n")
+        `Deliver to: ${invoice.delivery.address}, ${invoice.delivery.date} at ${invoice.delivery.time}`,
+        `Payment method: ${invoice.payment}`,
+        `Items: ${invoice.items.reduce((quantity, item) => quantity + item.quantity, 0)} | Total: ${money(invoice.total)}`,
+        "I will attach the order invoice PDF to this message.",
+      ].join("\n")
     : "";
-
   const whatsappUrl = `https://wa.me/${BUSINESS.whatsapp}?text=${encodeURIComponent(invoiceMessage)}`;
-  const emailUrl = `mailto:${BUSINESS.email}?cc=${encodeURIComponent(invoice?.customer.email || "")}&subject=${encodeURIComponent(`Boujee Belle invoice ${invoice?.number || ""}`)}&body=${encodeURIComponent(invoiceMessage)}`;
 
   return (
     <div className="site-shell">
@@ -466,17 +488,21 @@ function App() {
 
         {page === "confirmation" && invoice && (
           <section className="section-wrap confirmation-page">
-            <div className="confirmation-intro"><span className="success-mark">✓</span><span className="eyebrow">ALL THE LOVELIES, JUST FOR YOU</span><h1>Thank you, {invoice.customer.name.split(" ")[0]}!</h1><p>Your order is ready. Here’s your invoice — send it to us on WhatsApp so we can confirm your order and delivery.</p></div>
-            <div className="invoice-card">
-              <div className="invoice-head"><div className="brand invoice-brand"><img className="brand-logo" src="/boujee-belle-logo.png" alt="Boujee Belle" /><span className="brand-copy"><small>Trendy &amp; Elegant</small></span></div><div className="invoice-heading"><span className="eyebrow">YOUR INVOICE</span><h2>{invoice.number}</h2></div></div>
-              <div className="invoice-meta"><div><span>INVOICE DATE</span><strong>{dateTime(invoice.issuedAt)}</strong></div><div><span>PAYMENT DUE</span><strong>{dateTime(invoice.dueAt)}</strong></div><div><span>PAYMENT METHOD</span><strong>{invoice.payment}</strong></div></div>
-              <div className="invoice-parties"><div><span className="eyebrow">BILLED TO</span><strong>{invoice.customer.name}</strong><span>{invoice.customer.address}</span><span>{invoice.customer.phone}</span><span>{invoice.customer.email}</span></div><div><span className="eyebrow">DELIVER TO</span><strong>{invoice.delivery.address}</strong><span>{invoice.delivery.date} · {invoice.delivery.time}</span>{invoice.delivery.notes && <span>{invoice.delivery.notes}</span>}</div></div>
-              <div className="invoice-table"><div className="invoice-table-head"><span>ITEM</span><span>QTY</span><span>UNIT PRICE</span><span>AMOUNT</span></div>{invoice.items.map((item) => <div className="invoice-table-row" key={item.id}><span>{item.name}<small>{item.category}</small></span><span>{item.quantity}</span><span>{money(item.price)}</span><strong>{money(item.price * item.quantity)}</strong></div>)}</div>
-              <div className="invoice-total"><span>TOTAL DUE</span><strong>{money(invoice.total)}</strong></div>
-              <div className="invoice-foot"><span>Thank you for shopping with Boujee Belle.</span><span>{BUSINESS.address} · {BUSINESS.email}</span></div>
+            <div className="confirmation-intro"><span className="success-mark">✓</span><span className="eyebrow">ORDER RECEIVED</span><h1>Thank you, {invoice.customer.name.split(" ")[0]}!</h1><p>Your order is ready. Prepare the PDF invoice, then send it to Boujee Belle on WhatsApp so we can prepare your order.</p></div>
+            <div className="order-received-card">
+              <span className="eyebrow">ORDER REFERENCE</span>
+              <strong>{invoice.number}</strong>
+              <div><span>Items</span><span>{invoice.items.reduce((quantity, item) => quantity + item.quantity, 0)}</span></div>
+              <div><span>Payment method</span><span>{invoice.payment}</span></div>
+              <div><span>Deliver to</span><span>{invoice.delivery.address}</span></div>
+              <div className="received-total"><span>Order total</span><strong>{money(invoice.total)}</strong></div>
+              <p>Invoice due within 24 hours · Delivery fee confirmed separately</p>
             </div>
-            <div className="confirmation-actions"><button className="button button-dark" onClick={handleExcelDownload} disabled={exporting}>{exporting ? "Preparing invoice..." : "Download Excel invoice"} <Icon name="arrow" size={18} /></button><a className="button button-outline" href={whatsappUrl} target="_blank" rel="noreferrer">Send invoice on WhatsApp <Icon name="arrow" size={18} /></a><a className="button button-outline" href={emailUrl}>Email the invoice <Icon name="arrow" size={18} /></a><button className="button button-outline" onClick={() => window.print()}>Print invoice</button></div>
-            <p className="confirmation-note">Your invoice is due within 24 hours. WhatsApp and email open a ready-to-send message for you to review and send. Delivery fee will be confirmed separately.</p>
+            <div className="confirmation-actions">
+              <button className="button button-dark" onClick={handlePdfDownload} disabled={preparingPdf}>{preparingPdf ? "Preparing PDF..." : "Download order invoice PDF"} <Icon name="arrow" size={18} /></button>
+              <a className="button button-outline" href={whatsappUrl} target="_blank" rel="noreferrer">Send order to Boujee Belle on WhatsApp <Icon name="arrow" size={18} /></a>
+            </div>
+            <p className="confirmation-note">Attach the downloaded PDF in the WhatsApp chat to send it directly to Boujee Belle. The invoice PDF is for the business and is not emailed to the customer.</p>
           </section>
         )}
       </main>
