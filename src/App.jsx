@@ -182,6 +182,10 @@ function Icon({ name, size = 20 }) {
   if (name === "arrow") return <svg {...shared}><path d="M4 12h15M13 5l7 7-7 7" /></svg>;
   if (name === "heart") return <svg {...shared}><path d="M20.8 8.8c0 5.2-8.8 10-8.8 10s-8.8-4.8-8.8-10a4.6 4.6 0 0 1 8.8-1.6 4.6 4.6 0 0 1 8.8 1.6Z" /></svg>;
   if (name === "close") return <svg {...shared}><path d="m6 6 12 12M18 6 6 18" /></svg>;
+  if (name === "phone") return <svg {...shared}><path d="M7.5 3.8 10 8l-2 2c1.2 2.4 3.3 4.5 5.8 5.8l2-2 4.2 2.5-.8 4a2 2 0 0 1-2.2 1.6C9 21 3 15 2.1 7a2 2 0 0 1 1.6-2.2l3.8-1Z" /></svg>;
+  if (name === "email") return <svg {...shared}><rect x="3" y="5" width="18" height="14" rx="1.5" /><path d="m4 7 8 6 8-6" /></svg>;
+  if (name === "instagram") return <svg {...shared}><rect x="3" y="3" width="18" height="18" rx="5" /><circle cx="12" cy="12" r="4" /><circle cx="17.5" cy="6.5" r=".75" fill="currentColor" stroke="none" /></svg>;
+  if (name === "whatsapp") return <svg {...shared}><path d="M20.4 11.7a8.3 8.3 0 0 1-12.3 7.2L3 20l1.2-4.9a8.3 8.3 0 1 1 16.2-3.4Z" /><path d="M8.2 8.1c.2-.5.5-.5.8-.5h.5c.2 0 .4.1.5.4l.8 1.8c.1.2.1.4-.1.6l-.6.7c-.2.2-.2.4 0 .7.5.8 1.2 1.5 2 2 .3.2.5.2.7 0l.7-.8c.2-.2.4-.2.6-.1l1.8.8c.3.1.4.3.4.5v.5c0 .3-.1.6-.5.8-.4.2-1 .4-1.6.3-1.1-.2-2.4-.8-3.8-2.1-1.1-1-2.2-2.4-2.5-3.5-.2-.9.1-1.7.3-2.1Z" /></svg>;
   return <svg {...shared}><path d="M12 3v18M3 12h18" /></svg>;
 }
 
@@ -312,14 +316,15 @@ function App() {
           <img className="brand-logo" src="/boujee-belle-logo.png" alt="Boujee Belle" />
           <span className="brand-copy"><small>Trendy &amp; Elegant</small></span>
         </button>
-        <nav className="main-nav" aria-label="Main navigation">
-          <button className={page === "home" ? "nav-link active" : "nav-link"} onClick={() => navigate("home")}>About us</button>
-          <button className={page === "shop" ? "nav-link active" : "nav-link"} onClick={() => { setCategory("All"); navigate("shop"); }}>Shop</button>
-          <a className="nav-link" href={`mailto:${BUSINESS.email}`}>Contact</a>
-        </nav>
-        <button className="cart-button" onClick={() => navigate("cart")} aria-label={`Shopping bag, ${itemCount} items`}>
-          <Icon name="bag" size={20} /><span>My bag</span><b>{itemCount}</b>
-        </button>
+        <div className="header-actions">
+          <nav className="main-nav" aria-label="Main navigation">
+            <button className={page === "home" ? "nav-link active" : "nav-link"} onClick={() => navigate("home")}>About us</button>
+            <button className={page === "shop" ? "nav-link active" : "nav-link"} onClick={() => { setCategory("All"); navigate("shop"); }}>Shop</button>
+          </nav>
+          <button className="cart-button" onClick={() => navigate("cart")} aria-label={`Shopping bag, ${itemCount} items`}>
+            <Icon name="bag" size={20} /><span>My bag</span><b>{itemCount}</b>
+          </button>
+        </div>
       </header>
 
       <main>
@@ -478,12 +483,24 @@ function App() {
 
       <footer className="site-footer">
         <div className="footer-main">
-          <div className="footer-brand"><img className="brand-logo" src="/boujee-belle-logo.png" alt="Boujee Belle" /><p>Trendy &amp; Elegant</p></div>
-          <div><span className="eyebrow">A LITTLE LOOK AROUND</span><button onClick={() => navigate("home")}>About us</button><button onClick={() => navigate("shop")}>Shop all lovelies</button></div>
-          <div><span className="eyebrow">SAY HELLO</span><a href={`mailto:${BUSINESS.email}`}>{BUSINESS.email}</a><span>{BUSINESS.address}</span></div>
-          <div className="footer-note">For every version<br />of lovely <span>✦</span></div>
+          <div className="footer-brand"><img className="brand-logo" src="/boujee-belle-logo.png" alt="Boujee Belle" /></div>
+          <nav className="footer-nav" aria-label="Footer navigation">
+            <span className="eyebrow">A LITTLE LOOK AROUND</span>
+            <button onClick={() => navigate("home")}>About us</button>
+            <button onClick={() => { setCategory("All"); navigate("shop"); }}>Shop all lovelies</button>
+            <button onClick={() => navigate("cart")}>My bag ({itemCount})</button>
+          </nav>
+          <div className="footer-contact">
+            <span className="eyebrow">SAY HELLO</span>
+            <div className="footer-contact-links">
+              <a href={`tel:+${BUSINESS.whatsapp}`} aria-label="Call Boujee Belle" title="Call us"><Icon name="phone" size={19} /></a>
+              <a href={`mailto:${BUSINESS.email}`} aria-label="Email Boujee Belle" title="Email us"><Icon name="email" size={19} /></a>
+              <a href="https://www.instagram.com/boujeebelle_ug/" target="_blank" rel="noreferrer" aria-label="Find us on Instagram" title="Instagram"><Icon name="instagram" size={19} /></a>
+              <a href={`https://wa.me/${BUSINESS.whatsapp}`} target="_blank" rel="noreferrer" aria-label="Message Boujee Belle on WhatsApp" title="WhatsApp"><Icon name="whatsapp" size={19} /></a>
+            </div>
+          </div>
         </div>
-        <div className="footer-bottom"><span>© {new Date().getFullYear()} Boujee Belle</span><span>Made for your kind of sparkle.</span><button onClick={() => navigate("cart")}>Your bag ({itemCount})</button></div>
+        <div className="footer-bottom"><span>© {new Date().getFullYear()} Boujee Belle</span><span>Trendy &amp; Elegant</span></div>
       </footer>
 
       {quickView && (
